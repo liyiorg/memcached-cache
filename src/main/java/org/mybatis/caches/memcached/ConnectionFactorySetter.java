@@ -15,8 +15,14 @@
  */
 package org.mybatis.caches.memcached;
 
+import java.util.HashMap;
+
 import net.spy.memcached.ConnectionFactory;
+import net.spy.memcached.ConnectionFactoryBuilder;
+import net.spy.memcached.ConnectionFactoryBuilder.Protocol;
 import net.spy.memcached.DefaultConnectionFactory;
+import net.spy.memcached.auth.AuthDescriptor;
+import net.spy.memcached.auth.PlainCallbackHandler;
 
 /**
  * Setter from String to ConnectionFactory representation.
@@ -24,6 +30,7 @@ import net.spy.memcached.DefaultConnectionFactory;
  * @author Simone Tripodi
  */
 final class ConnectionFactorySetter extends AbstractPropertySetter<ConnectionFactory> {
+
 
     /**
      * Instantiates a String to ConnectionFactory setter.
@@ -39,7 +46,25 @@ final class ConnectionFactorySetter extends AbstractPropertySetter<ConnectionFac
      */
     @Override
     protected ConnectionFactory convert(String property) throws Throwable {
-        Class<?> clazz = Class.forName(property);
+    	String[] values = property.split("?");
+    	System.out.println(values[1]);
+    	if(values.length == 2){
+    		HashMap<String,String> map = new HashMap<String,String>();
+    		for(String pv : values[1].split("&")){
+    			 String[] pvArray = pv.split("=");
+    			 map.put(pvArray[0], pvArray[1]);
+    		}
+    		System.out.println(map.get("user")+" " + map.get("pwd"));
+    		if(map.containsKey("user")&&map.containsKey("pwd")){
+    			AuthDescriptor ad = new AuthDescriptor(new String[]{"PLAIN"}, new PlainCallbackHandler(map.get("user"), map.get("pwd")));
+    			return new ConnectionFactoryBuilder().setProtocol(Protocol.BINARY)
+                        .setAuthDescriptor(ad)
+                        .build();
+    		}
+    	}
+
+
+    	Class<?> clazz = Class.forName(property);
         if (!ConnectionFactory.class.isAssignableFrom(clazz)) {
             throw new IllegalArgumentException("Class '"
                     + clazz.getName()
